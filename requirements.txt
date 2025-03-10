@@ -1,0 +1,5 @@
+Flask==3.0.0
+pymongo==4.6.0
+pycryptodome==3.18.0
+web3==6.1.0
+requests==2.31.0
