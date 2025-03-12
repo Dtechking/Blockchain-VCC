@@ -3,7 +3,7 @@ import requests
 import random
 import time
 import json
-from encryption import encrypt_data  # Encrypts the data
+from .encryption import encrypt_data  # Encrypts the data
 
 # RSU Endpoint URL
 RSU_ENDPOINT = "http://localhost:5000/rsu/receive-data"

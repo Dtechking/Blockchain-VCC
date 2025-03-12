@@ -4,8 +4,6 @@ import json
 import random
 import time
 import os
-import base64
-from encryption import encrypt_data
 
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), "map.sumocfg")
 
@@ -20,9 +18,7 @@ def send_vehicle_data():
     global LAST_SEND_TIME
     if vehicle_data_buffer:
         try:
-            encrypted_payload = encrypt_data(list(vehicle_data_buffer.values()))
-            response = requests.post(RSU_ENDPOINT, json={"encrypted_data": encrypted_payload})
-
+            response = requests.post(RSU_ENDPOINT, json=list(vehicle_data_buffer.values()))
             if response.status_code == 200:
                 print(f"✅ Data batch sent successfully.")
             else:

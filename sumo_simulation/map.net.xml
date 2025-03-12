@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<net version="0.13" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/net_file.xsd">
+
+    <junction id="north_in_j" type="dead_end" x="0" y="-500"/>
+    <junction id="south_in_j" type="dead_end" x="0" y="500"/>
+    <junction id="east_in_j" type="dead_end" x="500" y="0"/>
+    <junction id="west_in_j" type="dead_end" x="-500" y="0"/>
+    <junction id="north_out_j" type="dead_end" x="0" y="-1000"/>
+    <junction id="south_out_j" type="dead_end" x="0" y="1000"/>
+    <junction id="east_out_j" type="dead_end" x="1000" y="0"/>
+    <junction id="west_out_j" type="dead_end" x="-1000" y="0"/>
+    <junction id="center" type="traffic_light" x="0" y="0"/>
+
+    <edge id="north_in" from="north_in_j" to="center" numLanes="2" speed="13.89" length="500">
+        <lane id="north_in_0" index="0" allow="passenger" speed="13.89" length="500" shape="6,500 6,0"/>
+        <lane id="north_in_1" index="1" allow="passenger" speed="13.89" length="500" shape="2,500 2,0"/>
+    </edge>
+
+    <edge id="south_in" from="south_in_j" to="center" numLanes="2" speed="13.89" length="500">
+        <lane id="south_in_0" index="0" allow="passenger" speed="13.89" length="500" shape="-6,-500 -6,0"/>
+        <lane id="south_in_1" index="1" allow="passenger" speed="13.89" length="500" shape="-2,-500 -2,0"/>
+    </edge>
+
+    <edge id="east_in" from="east_in_j" to="center" numLanes="2" speed="13.89" length="500">
+        <lane id="east_in_0" index="0" allow="passenger" speed="13.89" length="500" shape="500,-6 0,-6"/>
+        <lane id="east_in_1" index="1" allow="passenger" speed="13.89" length="500" shape="500,-2 0,-2"/>
+    </edge>
+
+    <edge id="west_in" from="west_in_j" to="center" numLanes="2" speed="13.89" length="500">
+        <lane id="west_in_0" index="0" allow="passenger" speed="13.89" length="500" shape="-500,6 0,6"/>
+        <lane id="west_in_1" index="1" allow="passenger" speed="13.89" length="500" shape="-500,2 0,2"/>
+    </edge>
+
+    <edge id="north_out" from="center" to="north_out_j" numLanes="2" speed="13.89" length="500">
+        <lane id="north_out_0" index="0" allow="passenger" speed="13.89" length="500" shape="-6,0 -6,500"/>
+        <lane id="north_out_1" index="1" allow="passenger" speed="13.89" length="500" shape="-2,0 -2,500"/>
+    </edge>
+
+    <edge id="south_out" from="center" to="south_out_j" numLanes="2" speed="13.89" length="500">
+        <lane id="south_out_0" index="0" allow="passenger" speed="13.89" length="500" shape="2,0 2,-500"/>
+        <lane id="south_out_1" index="1" allow="passenger" speed="13.89" length="500" shape="6,0 6,-500"/>
+    </edge>
+
+    <edge id="east_out" from="center" to="east_out_j" numLanes="2" speed="13.89" length="500">
+        <lane id="east_out_0" index="0" allow="passenger" speed="13.89" length="500" shape="0,2 500,2"/>
+        <lane id="east_out_1" index="1" allow="passenger" speed="13.89" length="500" shape="0,6 500,6"/>
+    </edge>
+
+    <edge id="west_out" from="center" to="west_out_j" numLanes="2" speed="13.89" length="500">
+        <lane id="west_out_0" index="0" allow="passenger" speed="13.89" length="500" shape="0,-2 -500,-2"/>
+        <lane id="west_out_1" index="1" allow="passenger" speed="13.89" length="500" shape="0,-6 -500,-6"/>
+    </edge>
+
+
+<connection from="north_in" to="south_out" fromLane="0" toLane="0" dir="s" state="o"/>
+<connection from="north_in" to="south_out" fromLane="1" toLane="1" dir="s" state="o"/>
+<connection from="south_in" to="north_out" fromLane="0" toLane="0" dir="s" state="o"/>
+<connection from="south_in" to="north_out" fromLane="1" toLane="1" dir="s" state="o"/>
+
+<connection from="east_in" to="west_out" fromLane="0" toLane="0" dir="s" state="o"/>
+<connection from="east_in" to="west_out" fromLane="1" toLane="1" dir="s" state="o"/>
+<connection from="west_in" to="east_out" fromLane="0" toLane="0" dir="s" state="o"/>
+<connection from="west_in" to="east_out" fromLane="1" toLane="1" dir="s" state="o"/>
+
+<connection from="north_in" to="east_out" fromLane="0" toLane="0" dir="r" state="o"/>
+<connection from="north_in" to="west_out" fromLane="1" toLane="1" dir="l" state="o"/>
+<connection from="south_in" to="east_out" fromLane="0" toLane="0" dir="r" state="o"/>
+<connection from="south_in" to="west_out" fromLane="1" toLane="1" dir="l" state="o"/>
+
+<connection from="east_in" to="north_out" fromLane="0" toLane="0" dir="l" state="o"/>
+<connection from="east_in" to="south_out" fromLane="1" toLane="1" dir="r" state="o"/>
+<connection from="west_in" to="north_out" fromLane="0" toLane="0" dir="r" state="o"/>
+<connection from="west_in" to="south_out" fromLane="1" toLane="1" dir="l" state="o"/>
+
+<connection from="west_out" to="west_in" fromLane="0" toLane="0" dir="s" state="o"/>
+<connection from="west_out" to="west_in" fromLane="1" toLane="1" dir="s" state="o"/>
+<connection from="east_out" to="east_in" fromLane="0" toLane="0" dir="s" state="o"/>
+<connection from="east_out" to="east_in" fromLane="1" toLane="1" dir="s" state="o"/>
+<connection from="north_out" to="north_in" fromLane="0" toLane="0" dir="s" state="o"/>
+<connection from="north_out" to="north_in" fromLane="1" toLane="1" dir="s" state="o"/>
+<connection from="south_out" to="south_in" fromLane="0" toLane="0" dir="s" state="o"/>
+<connection from="south_out" to="south_in" fromLane="1" toLane="1" dir="s" state="o"/>
+
+
+    <tlLogic id="center" type="static" programID="0" offset="0">
+        <phase duration="30" state="GGrr"/> <!-- Green for north-south, red for east-west -->
+        <phase duration="30" state="rrGG"/> <!-- Red for north-south, green for east-west -->
+    </tlLogic>
+
+
+
+</net>

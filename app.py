@@ -1,11 +1,11 @@
 from flask import Flask, jsonify, request
 from registration.registration import register_entity
-from data_simulation.data_generator import generate_vehicle_data
-from blockchain.contract_interaction import store_data_on_blockchain
+from data_collection.data_generator import generate_vehicle_data
+# from blockchain.contract_interaction import store_data_on_blockchain
 from rsu import rsu_bp
 import logging
 import threading
-from data_simulation.vehicle_simulation import start_simulation
+from data_collection.vehicle_simulation import start_simulation
 import signal
 import sys
 
@@ -71,7 +71,7 @@ def store_data():
         if not data:
             raise ValueError("No data provided for blockchain storage")
 
-        response = store_data_on_blockchain(data)
+        # response = store_data_on_blockchain(data)
         logging.info(f"Data Stored on Blockchain Successfully: {data}")
         return jsonify({"message": "Data stored successfully", "transaction": response}), 201
     except ValueError as ve:
@@ -89,7 +89,7 @@ def health_check():
 # Main driver function
 if __name__ == '__main__':
     try:
-        run_simulation()
+        # run_simulation()
         app.run(debug=True, port=5000)
     except Exception as e:
         logging.critical(f"Server startup failed: {str(e)}")
