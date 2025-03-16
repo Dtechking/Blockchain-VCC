@@ -46,7 +46,7 @@ def aggregate_data(traffic_data_storage):
 
 # Function to print aggregated data
 def print_aggregated_data():
-    print("\n🔹 Aggregated Data 🔹")
+    print("\n\n🔹 Aggregated Data 🔹")
     for location, data in aggregated_data.items():
         print(f"Location: {location}")
         print(f"  Status: {data['status']}")

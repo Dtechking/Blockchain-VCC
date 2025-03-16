@@ -19,6 +19,7 @@ def periodic_aggregation():
         
         with data_lock:  # Ensure thread-safe access
             if traffic_data_storage:
+                print("\n\nAggregating received data...")
                 aggregate_data(traffic_data_storage)
                 traffic_data_storage.clear()
                 print("✅ Aggregation triggered and data cleared.")
@@ -33,13 +34,17 @@ def receive_data():
         if not encrypted_data:
             raise ValueError("No encrypted data received")
 
-        print("Received encrypted data: ", encrypted_data)
+        print("\n\nReceived encrypted data: ")
+        print(encrypted_data)
 
         # 🔹 FIX: Convert JSON string to dictionary
         encrypted_data_dict = json.loads(encrypted_data)
 
         # Decrypt received data
+        print("\n\nPerforming Decryption in RSU: ")
         decrypted_data = decrypt_data(encrypted_data_dict)
+        print("Decrypted Data: ")
+        print(decrypted_data)
 
         # Store decrypted data for processing
         with data_lock:

@@ -20,7 +20,10 @@ def send_vehicle_data():
     global LAST_SEND_TIME
     if vehicle_data_buffer:
         try:
+            print("\n\nPerforming Encryption before sending to RSU...")
             encrypted_payload = encrypt_data(list(vehicle_data_buffer.values()))
+            print("Encrypted Data: ")
+            print(encrypted_payload)
             response = requests.post(RSU_ENDPOINT, json={"encrypted_data": encrypted_payload})
 
             if response.status_code == 200:
@@ -39,6 +42,7 @@ def run_sumo():
 
     traci.start(["sumo-gui", "-c", CONFIG_PATH])
 
+    print("\n\nSumo Simulation Started, Getting Vehicle data:")
     while traci.simulation.getMinExpectedNumber() > 0:
         traci.simulationStep()
         time.sleep(0.5)
@@ -67,6 +71,8 @@ def run_sumo():
                 "traffic_status": traffic_status,
                 "timestamp": int(time.time())
             }
+
+            print(vehicle_data_buffer[vehicle_id])
 
         # Send batched data every 10 seconds
         if time.time() - LAST_SEND_TIME >= SEND_INTERVAL:
