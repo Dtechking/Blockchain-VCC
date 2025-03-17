@@ -9,7 +9,7 @@ from encryption import encrypt_data
 
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), "map.sumocfg")
 
-RSU_ENDPOINT = "http://localhost:5000/rsu/receive-data"
+RSU_ENDPOINT = "http://localhost:5000/receive-data"
 
 # Buffer for batched data
 vehicle_data_buffer = {}
@@ -27,9 +27,13 @@ def send_vehicle_data():
             response = requests.post(RSU_ENDPOINT, json={"encrypted_data": encrypted_payload})
 
             if response.status_code == 200:
-                print(f"✅ Data batch sent successfully.")
+                try:
+                    response_json = response.json()
+                    print(f"✅ Data batch sent successfully: {response_json}")
+                except json.JSONDecodeError:
+                    print(f"⚠️ Error: RSU response is not valid JSON: {response.text}")
             else:
-                print(f"❗ Failed to send data batch: {response.json()}")
+                print(f"❗ Failed to send data batch: {response.status_code} - {response.text}")
         except Exception as e:
             print(f"❌ Error sending data batch: {e}")
         
@@ -82,5 +86,3 @@ def run_sumo():
     input("Press Enter to exit SUMO...")  # Keeps SUMO open until user presses Enter
     traci.close()
 
-if __name__ == "__main__":
-    run_sumo()

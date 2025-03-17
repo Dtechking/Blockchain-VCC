@@ -4,14 +4,17 @@ from Crypto.Random import get_random_bytes
 import base64
 import json
 
-# Load RSU public key
-with open("rsu_public_key.pem", "rb") as pub_file:
-    rsu_public_key = RSA.import_key(pub_file.read())
-
-cipher_rsa = PKCS1_OAEP.new(rsu_public_key)
-
 def encrypt_data(data):
     """ Encrypt data using AES, then encrypt the AES key using RSA. """
+
+    # Load RSU public key
+    with open("rsu_key/rsu_public_key.pem", "rb") as pub_file:
+        key_data = pub_file.read()
+        rsu_public_key = RSA.import_key(key_data)
+
+    # print("Public Key:- ", rsu_public_key.export_key().decode())
+
+    cipher_rsa = PKCS1_OAEP.new(rsu_public_key)
     
     # Convert data to JSON string
     json_data = json.dumps(data).encode()

@@ -1,68 +1,81 @@
-import threading
-import time
+import os
 import json
+import time
+import threading
+import logging
+import requests
+import base64
 from flask import Blueprint, request, jsonify
-from .data_aggregator import aggregate_data
-from .decryption import decrypt_data
+from Crypto.PublicKey import RSA
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.backends import default_backend
+from decryption import decrypt_data
 
-rsu_bp = Blueprint('rsu', __name__)
 
-# RSU Data Storage
-traffic_data_storage = []
-# Lock for thread-safe data access
-data_lock = threading.Lock()
+# Configuration
+KEY_GENERATOR_URL = "http://localhost:5001/generate-keys"
+KEYS_FOLDER = "keys"
+PRIVATE_KEY_FILE = os.path.join(KEYS_FOLDER, "rsu_private_key.pem")
+PUBLIC_KEY_FILE = os.path.join(KEYS_FOLDER, "rsu_public_key.pem")
+API_KEY = "get_secure_rsa_keys"
 
-# Periodic Aggregation Function
-def periodic_aggregation():
-    while True:
-        time.sleep(15)  # Trigger aggregation every 10 seconds
-        
-        with data_lock:  # Ensure thread-safe access
-            if traffic_data_storage:
-                print("\n\nAggregating received data...")
-                aggregate_data(traffic_data_storage)
-                traffic_data_storage.clear()
-                print("✅ Aggregation triggered and data cleared.")
+# Logger Setup
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-# Start the background thread for aggregation
-threading.Thread(target=periodic_aggregation, daemon=True).start()
 
-@rsu_bp.route('/receive-data', methods=['POST'])
-def receive_data():
+### 📌 1. Fetch RSU Keys from Key Generator on Startup
+def fetch_rsu_keys():
     try:
-        encrypted_data = request.json.get("encrypted_data")
-        if not encrypted_data:
-            raise ValueError("No encrypted data received")
 
-        print("\n\nReceived encrypted data: ")
-        print(encrypted_data)
+        if os.path.exists(PRIVATE_KEY_FILE) and os.path.exists(PUBLIC_KEY_FILE):
+            logging.info("✅ RSU Keys already exist. Skipping fetch.")
+            return
+        
+        logging.info("🔄 Requesting RSU keys from Key Generator Module...")
+        
+        # Send request with authentication header
+        headers = {"X-API-KEY": API_KEY}
+        response = requests.get(KEY_GENERATOR_URL, headers=headers)
 
-        # 🔹 FIX: Convert JSON string to dictionary
-        encrypted_data_dict = json.loads(encrypted_data)
+        if response.status_code == 200:
+            keys = response.json()
+            private_key_b64 = keys.get("private_key")
+            public_key_b64 = keys.get("public_key")
 
-        # Decrypt received data
-        print("\n\nPerforming Decryption in RSU: ")
-        decrypted_data = decrypt_data(encrypted_data_dict)
-        print("Decrypted Data: ")
-        print(decrypted_data)
+            if private_key_b64 and public_key_b64:
+                os.makedirs(KEYS_FOLDER, exist_ok=True)
 
-        # Store decrypted data for processing
-        with data_lock:
-            traffic_data_storage.extend(decrypted_data)
+                # Step 1: Decode Base64 to get original PEM
+                private_pem = base64.b64decode(private_key_b64)
+                public_pem = base64.b64decode(public_key_b64)
 
-        return jsonify({"message": "Data received and stored successfully"}), 200
+                # Step 2: Convert PEM into RSA key objects
+                private_key = serialization.load_pem_private_key(
+                    private_pem, password=None, backend=default_backend()
+                )
+
+                public_key = serialization.load_pem_public_key(
+                    public_pem, backend=default_backend()
+                )
+
+                with open(PRIVATE_KEY_FILE, "wb") as f:
+                    f.write(private_key.private_bytes(
+                        encoding=serialization.Encoding.PEM,
+                        format=serialization.PrivateFormat.TraditionalOpenSSL,
+                        encryption_algorithm=serialization.NoEncryption()
+                    ))
+
+                with open(PUBLIC_KEY_FILE, "wb") as f:
+                    f.write(public_key.public_bytes(
+                        encoding=serialization.Encoding.PEM,
+                        format=serialization.PublicFormat.SubjectPublicKeyInfo
+                    ))
+
+                logging.info("✅ RSU Keys successfully obtained and stored.")
+            else:
+                logging.error("❗ Invalid keys received from Key Generator Module.")
+        else:
+            logging.error(f"❌ Failed to fetch RSU Keys: {response.text}")
 
     except Exception as e:
-        return jsonify({"error": f"Data reception failed: {str(e)}"}), 400
-
-    # TODO: Implement Encryption later.
-    # try:
-    #     encrypted_data = request.json
-    #     decrypted_data = decrypt_data(encrypted_data)
-        
-    #     # Add data to the buffer for aggregation
-    #     traffic_data_storage.append(decrypted_data)
-
-    #     return jsonify({"message": "Data received and processed successfully"}), 200
-    # except Exception as e:
-    #     return jsonify({"error": f"Data reception failed: {str(e)}"}), 400
+        logging.error(f"❌ Error fetching RSU Keys: {e}")
