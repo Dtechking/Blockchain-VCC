@@ -5,8 +5,9 @@ import time
 import base64
 import os
 from simulator import run_sumo  # Import the simulation function
-from encryption import encrypt_data
+from encryptor import encrypt_data
 from flask import Flask, jsonify, request
+from vehicle_key_generator import generate_vehicle_keys
 
 # RSU server endpoint
 RSU_PUBLIC_KEY_URL = "http://localhost:5000/get-rsu-public-key"
@@ -95,6 +96,7 @@ def health_check():
 
 # Main driver function
 if __name__ == '__main__':
+    generate_vehicle_keys()
     get_rsu_public_key()  # Fetch RSU key on startup
     logging.info("🚀 SUMO Simulator Server is starting...")
     run_sumo()

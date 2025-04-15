@@ -5,7 +5,11 @@ import random
 import time
 import os
 import base64
-from encryption import encrypt_data
+from encryptor import encrypt_data
+from rsu_event_listener import poll_rsu_broadcasts
+from sign_vehicle_data import sign_vehicle_data
+import threading
+
 
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), "map.sumocfg")
 
@@ -43,7 +47,9 @@ def send_vehicle_data():
 
 def run_sumo():
     global LAST_SEND_TIME
+    event_counter = 0  # For unique event IDs
 
+    threading.Thread(target=poll_rsu_broadcasts, daemon=True).start()
     traci.start(["sumo-gui", "-c", CONFIG_PATH])
 
     print("\n\nSumo Simulation Started, Getting Vehicle data:")
@@ -55,26 +61,48 @@ def run_sumo():
         for vehicle_id in traci.vehicle.getIDList():
             position = traci.vehicle.getPosition(vehicle_id)
             speed = traci.vehicle.getSpeed(vehicle_id)
+            event_type = ""
+            message = ""
+            event_id = None
 
-            location = {"latitude": int(position[0] // 250), "longitude": int(position[1] // 250)}
+            # Normalize location to grid for easier tracking
+            lat = int(position[0] // 250)
+            lon = int(position[1] // 250)
+            location = {"lat": lat, "lon": lon}
+
             traffic_status = random.choices(
-                ["Congested", "Free-flow"],
-                weights=[0.2, 0.8]
+                ["Congested", "Free-flow", "Moderate"],
+                weights=[0.1, 0.75, 0.15]
             )[0]
 
-            # Specifying a Accident Location
-            if location["latitude"] == -1 and location["longitude"] == 0:
-                traffic_status = "Accident"
-                
+            # Simulated Accident Location
+            if lat == -1 and lon == 0:
+                traffic_status = "Congested"
+                event_type = "accident"
+                message = f"Accident reported by {vehicle_id} at location ({lat}, {lon})"
+                event_id = f"{vehicle_id}_{int(time.time())}"  # unique ID using vehicle + time
 
-            # Store vehicle data in buffer
+            timestamp = int(time.time())
+            # Prepare data packet
             vehicle_data_buffer[vehicle_id] = {
                 "vehicle_id": vehicle_id,
                 "location": location,
                 "speed": speed,
                 "traffic_status": traffic_status,
-                "timestamp": int(time.time())
+                "timestamp": timestamp,
+                "eventType": event_type,
+                "message": message,
+                "eventId": event_id
             }
+
+            vehicle_data_buffer[vehicle_id]["signature"] = sign_vehicle_data(
+                event_id,
+                f"{timestamp}",
+                event_type,
+                vehicle_id,
+                f"{location['lat']},{location['lon']}",
+                message
+            )
 
             print(vehicle_data_buffer[vehicle_id])
 
@@ -85,4 +113,3 @@ def run_sumo():
     print("✅ SUMO Simulation Completed. Keeping GUI open.")
     input("Press Enter to exit SUMO...")  # Keeps SUMO open until user presses Enter
     traci.close()
-
