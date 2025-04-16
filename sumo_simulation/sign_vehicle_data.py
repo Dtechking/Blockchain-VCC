@@ -1,5 +1,6 @@
 import hashlib
 import base64
+import logging
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.backends import default_backend
@@ -29,6 +30,9 @@ def sign_vehicle_data(event_id, timestamp, event_type, vehicle_address, location
     message_string = f"{event_id}|{timestamp}|{event_type}|{vehicle_address}|{location}|{event_details}"
     message_bytes = message_string.encode('utf-8')
 
+    logging.info(f"[SIGNING] Message: {message_string}")
+    logging.info(f"[SIGNING] Message Bytes: {message_bytes}")
+
     # Sign with RSA using PKCS1v15 and SHA-256
     signature = private_key.sign(
         message_bytes,
@@ -36,5 +40,7 @@ def sign_vehicle_data(event_id, timestamp, event_type, vehicle_address, location
         hashes.SHA256()
     )
 
-    # Return as hex string
-    return base64.b64encode(signature).decode('utf-8')
+    signature_b64 = base64.b64encode(signature).decode('utf-8')
+    logging.debug(f"[SIGNING] Signature (base64): {signature_b64}")
+
+    return signature_b64

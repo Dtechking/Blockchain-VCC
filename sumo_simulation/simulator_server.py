@@ -86,6 +86,22 @@ def start_simulation():
     except Exception as e:
         logging.error(f"❌ Error starting SUMO simulation: {e}")
         return jsonify({"error": str(e)}), 500
+    
+# New route to expose vehicle's RSA public key
+@app.route('/get-vehicle-public-key', methods=['GET'])
+def get_vehicle_public_key():
+    try:
+        with open("vehicle_keys/vehicle_public_key.pem", "rb") as f:
+            public_key_bytes = f.read()
+            encoded_key = base64.b64encode(public_key_bytes).decode("utf-8")
+            return jsonify({"vehicle_public_key": encoded_key}), 200
+    except FileNotFoundError:
+        logging.error("🚫 Vehicle public key file not found.")
+        return jsonify({"error": "Vehicle public key not found"}), 404
+    except Exception as e:
+        logging.error(f"❌ Error reading vehicle public key: {e}")
+        return jsonify({"error": "Failed to load vehicle public key"}), 500
+
 
 
 # Health check route
@@ -99,5 +115,11 @@ if __name__ == '__main__':
     generate_vehicle_keys()
     get_rsu_public_key()  # Fetch RSU key on startup
     logging.info("🚀 SUMO Simulator Server is starting...")
-    run_sumo()
-    app.run(debug=True, port=5002)  # Run server on port 5002
+
+    # Run SUMO simulator in a background thread
+    if os.environ.get("WERKZEUG_RUN_MAIN") == "true":
+        sumo_thread = threading.Thread(target=run_sumo)
+        sumo_thread.start()
+
+    # Run Flask server in main thread (reloader works fine here)
+    app.run(debug=True, port=5002)

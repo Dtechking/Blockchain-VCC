@@ -6,7 +6,7 @@ contract TrafficEventLogger {
     // Struct to store detailed event data
     struct TrafficEvent {
         string eventId;
-        uint256 timestamp;
+        string timestamp;
         string eventType;
         bytes32 eventHash;
         string vehicleAddress;
@@ -28,12 +28,13 @@ contract TrafficEventLogger {
         string location,
         string eventDetails,
         address rsuAddress,
-        uint256 timestamp
+        string timestamp
     );
 
     // Function to log a new event
     function logAlert(
         string memory _eventId,
+        string memory _timestamp,
         string memory _eventType,
         bytes32 _eventHash,
         string memory _vehicleAddress,
@@ -44,7 +45,7 @@ contract TrafficEventLogger {
 
         events[_eventId] = TrafficEvent({
             eventId: _eventId,
-            timestamp: block.timestamp,
+            timestamp: _timestamp,
             eventType: _eventType,
             eventHash: _eventHash,
             vehicleAddress: _vehicleAddress,
@@ -62,7 +63,7 @@ contract TrafficEventLogger {
             _location,
             _eventDetails,
             msg.sender,
-            block.timestamp
+            _timestamp
         );
 
         return _eventId;

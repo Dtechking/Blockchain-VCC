@@ -33,24 +33,25 @@ def verify_signature(message: str, signature_b64: str) -> bool:
 
 # Polling thread to receive and verify alerts from RSU
 def poll_rsu_broadcasts():
-    while True:
-        try:
-            response = requests.get(RSU_BROADCAST_ENDPOINT)
-            if response.status_code == 200:
-                alerts = response.json().get("alerts", [])
-                print(f"\n📡 Received {len(alerts)} broadcast alert(s) from RSU.")
+    return
+    # while True:
+    #     try:
+    #         response = requests.get(RSU_BROADCAST_ENDPOINT)
+    #         if response.status_code == 200:
+    #             alerts = response.json().get("alerts", [])
+    #             print(f"\n📡 Received {len(alerts)} broadcast alert(s) from RSU.")
 
-                for alert in alerts:
-                    message = alert.get("message", "")
-                    signature = alert.get("signature", "")
+    #             for alert in alerts:
+    #                 message = alert.get("message", "")
+    #                 signature = alert.get("signature", "")
 
-                    if verify_signature(message, signature):
-                        print(f"✅ Verified alert from RSU: {message}")
-                    else:
-                        print(f"❌ Failed to verify alert: {message}")
-            else:
-                print(f"⚠️ Failed to fetch alerts: {response.status_code}")
-        except Exception as e:
-            print(f"❌ Error fetching RSU broadcasts: {e}")
+    #                 if verify_signature(message, signature):
+    #                     print(f"✅ Verified alert from RSU: {message}")
+    #                 else:
+    #                     print(f"❌ Failed to verify alert: {message}")
+    #         else:
+    #             print(f"⚠️ Failed to fetch alerts: {response.status_code}")
+    #     except Exception as e:
+    #         print(f"❌ Error fetching RSU broadcasts: {e}")
 
-        time.sleep(5)  # poll every 5 seconds
+    #     time.sleep(5)  # poll every 5 seconds

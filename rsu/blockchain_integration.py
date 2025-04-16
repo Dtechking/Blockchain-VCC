@@ -2,15 +2,20 @@ from web3 import Web3
 import json
 import logging
 import base64
+import os
+
+# Get the absolute path to the file
+file_path = os.path.join(os.path.dirname(__file__), 'contract_details', 'TrafficEventLogger.json')
+
 
 # Connect to local Ganache
 web3 = Web3(Web3.HTTPProvider("http://127.0.0.1:7545"))
 assert web3.is_connected(), "❌ Unable to connect to Ganache"
 
 # Load contract ABI and address
-CONTRACT_DEPLOYED_ADDRESS = "0xcF849cF7bfE724bdfdd13427d9B9F2C2a43acC0a"
+CONTRACT_DEPLOYED_ADDRESS = "0x76cA49e2eE33aeE35fc38EAf3f0F0E70c15dB8ef"
 
-with open("contract_details/TrafficEventLogger.json") as f:
+with open(file_path) as f:
     contract_json = json.load(f)
     abi = contract_json["abi"]
     contract_address = CONTRACT_DEPLOYED_ADDRESS
@@ -29,6 +34,7 @@ def send_event_to_blockchain(event_data):
 
         # Extract data
         event_id = event_data["eventId"]
+        timestamp = str(event_data["timestamp"])
         event_type = event_data["eventType"]
         event_hash = web3.keccak(text=event_data["message"])  # Assuming message is used to create hash
         location = event_data["location"]
@@ -37,6 +43,7 @@ def send_event_to_blockchain(event_data):
         signature = base64.b64decode(event_data["signature"])  # Signature must be bytes
 
         assert isinstance(event_id, str)
+        assert isinstance(timestamp, str)
         assert isinstance(event_type, str)
         assert isinstance(event_hash, bytes)
         assert len(event_hash) == 32
@@ -63,6 +70,7 @@ def send_event_to_blockchain(event_data):
         # Build transaction
         txn = contract.functions.logAlert(
             event_id,
+            timestamp,
             event_type,
             event_hash,
             vehicle_id,
@@ -90,4 +98,24 @@ def send_event_to_blockchain(event_data):
 
     except Exception as e:
         logging.error(f"❌ Error sending event to blockchain: {str(e)}")
+        return None
+    
+def get_event_by_id(event_id: str):
+    try:
+        event_data = contract.functions.getEventDetails(event_id).call()
+        # print(f"Event data received by RSU : {event_data}")
+        print(f"Signature (Base64): {base64.b64encode(event_data[7]).decode()}")
+        # Unpack struct
+        return {
+            "eventId": event_data[0],
+            "timestamp": event_data[1],
+            "eventType": event_data[2],
+            "eventHash": event_data[3],
+            "vehicle_id": event_data[4],
+            "location": event_data[5],
+            "message": event_data[6],  # eventDetails
+            "signature": base64.b64encode(event_data[7]).decode()  # Convert bytes to base64 string
+        }
+    except Exception as e:
+        logging.error(f"❌ Failed to fetch event by ID: {e}")
         return None

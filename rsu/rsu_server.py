@@ -3,6 +3,8 @@ import json
 import time
 import base64
 import threading
+import os
+import requests
 from decryptor import decrypt_data
 from flask import Flask, jsonify, request
 from rsu_key_generator import generate_rsu_keys
@@ -10,12 +12,16 @@ from data_aggregator import aggregate_data
 from signing import sign_data
 from blockchain_integration import send_event_to_blockchain
 from data_aggregator import load_cache
+from cloud_logger import log_critical_event, log_aggregated_data
+
 
 # Flask App
 app = Flask(__name__)
 
-CONTRACT_DEPLOYED_ADDRESS = "0xcF849cF7bfE724bdfdd13427d9B9F2C2a43acC0a"
+CONTRACT_DEPLOYED_ADDRESS = "0x76cA49e2eE33aeE35fc38EAf3f0F0E70c15dB8ef"
+DATA_CACHE_FILE = "cache/aggregated_traffic_cache.json"
 EVENT_CACHE_FILE = "cache/events.json"
+CA_VERIFY_URL = "http://localhost:5001/verify-certificate"
 
 # Logger Setup
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -31,7 +37,9 @@ def periodic_aggregation():
         with data_lock:
             if traffic_data_storage:
                 logging.info("\n\n🛠️ Aggregating received traffic data...")
-                aggregate_data(traffic_data_storage)
+                aggregated_data = aggregate_data(traffic_data_storage)
+                log_aggregated_data(aggregated_data)
+
                 traffic_data_storage.clear()
                 logging.info("✅ Aggregation complete. Data cleared.")
 
@@ -43,11 +51,26 @@ threading.Thread(target=periodic_aggregation, daemon=True).start()
 def receive_data():
     try:
         encrypted_data = request.get_json().get("encrypted_data")
-
+        signed_certificate = request.get_json().get("certificate")
+        
         if not encrypted_data:
             raise ValueError("No encrypted data received")
-
+        if not signed_certificate:
+            raise ValueError("No certificate received")
+        
         logging.info("\n\n🔒 Received encrypted data.")
+        logging.info("🔐 Verifying certificate with CA...")
+
+        # # Step 1: Verify the certificate via CA
+        # verify_response = requests.post(
+        #     CA_VERIFY_URL,
+        #     json={"certificate": signed_certificate}
+        # )
+
+        # if verify_response.status_code != 200:
+        #     raise ValueError("Certificate verification failed with CA")
+
+        logging.info("✅ Certificate is valid.")
 
         # Convert JSON string to dictionary
         encrypted_data_dict = json.loads(encrypted_data)
@@ -65,7 +88,7 @@ def receive_data():
         for event in decrypted_data:
             if event.get("eventType") == "accident":
                 # Ensure required fields are present
-                required_keys = ["eventId", "eventType", "location", "message", "signature", "vehicle_id"]
+                required_keys = ["eventId", "eventType", "location", "message", "signature", "vehicle_id", "timestamp"]
                 if all(k in event for k in required_keys):
                     # Format location as "lat,lon"
                     loc = event["location"]
@@ -75,6 +98,7 @@ def receive_data():
                     formatted_event = {
                         "eventId": event["eventId"],  # Extract timestamp as numeric ID
                         "eventType": event["eventType"],
+                        "timestamp": event["timestamp"],
                         "location": formatted_location,
                         "message": event["message"],
                         "signature": event["signature"],
@@ -111,9 +135,8 @@ def receive_data():
                     # 💾 Save updated cache
                     with open(EVENT_CACHE_FILE, "w") as f:
                         json.dump(cached, f, indent=4)
-
-                    # Send to blockchain
-                    # TODO: Blockchain Event Sending
+                        
+                    log_critical_event(formatted_event)
                     send_event_to_blockchain(formatted_event)
                 else:
                     logging.warning(f"⚠️ Incomplete accident event skipped: {event}")
@@ -168,6 +191,6 @@ def broadcast_traffic_alert():
 
 if __name__ == "__main__":
     generate_rsu_keys()  # Fetch RSU keys before starting the server
-    load_cache()
+    load_cache(DATA_CACHE_FILE)
     logging.info("🚀 RSU Flask Server is starting...")
     app.run(host="0.0.0.0", port=5000, debug=True)

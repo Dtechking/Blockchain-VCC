@@ -8,3 +8,4 @@ cryptography
 web3
 cryptography
 eth-account
+dotenv

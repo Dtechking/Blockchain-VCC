@@ -58,6 +58,7 @@ def save_cache(DATA_CACHE_FILE):
 
 # Add data to aggregation
 def aggregate_data(traffic_data_storage):
+    aggregated_data.clear()
     current_time = time.time()
 
     # Clear outdated entries before aggregation
@@ -76,7 +77,7 @@ def aggregate_data(traffic_data_storage):
         # Check for existing vehicle and update its timestamp
         for vehicle in aggregated_data[location]["vehicles"]:
             if vehicle["vehicle_id"] == vehicle_id:
-                vehicle["timestamp"] = max(vehicle["timestamp"], timestamp)  # Update with latest timestamp
+                vehicle["timestamp"] = vehicle["timestamp"]
                 break
         else:
             # Add new vehicle entry if not found
@@ -88,8 +89,8 @@ def aggregate_data(traffic_data_storage):
     
     # Print the aggregated data
     print_aggregated_data()
-    save_cache()  # Save data after aggregation
-    aggregated_data.clear()
+    save_cache(DATA_CACHE_FILE)  # Save data after aggregation
+    return aggregated_data
 
 # Function to print aggregated data
 def print_aggregated_data():

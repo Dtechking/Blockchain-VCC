@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
+
+    <!-- Vehicle Type -->
+    <vType id="car" vClass="passenger" accel="2.6" decel="4.5" sigma="0.5" length="5" maxSpeed="13.89"/>
+
+    <!-- Routes -->
+    <route id="north_to_south" edges="north_in south_out"/>
+    <route id="south_to_north" edges="south_in north_out"/>
+    <route id="east_to_west" edges="east_in west_out"/>
+    <route id="west_to_east" edges="west_in east_out"/>
+
+    <!-- Dynamic Vehicle Flow with Random Start -->
+    <flow id="north_south_flow" type="car" route="north_to_south" begin="0" end="3600" probability="0.3" departPos="random" departSpeed="random"/>
+    <flow id="south_north_flow" type="car" route="south_to_north" begin="0" end="3600" probability="0.25" departPos="random" departSpeed="random"/>
+    <flow id="east_west_flow" type="car" route="east_to_west" begin="0" end="3600" probability="0.35" departPos="random" departSpeed="random"/>
+    <flow id="west_east_flow" type="car" route="west_to_east" begin="0" end="3600" probability="0.2" departPos="random" departSpeed="random"/>
+
+</routes>

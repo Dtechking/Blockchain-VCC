@@ -9,7 +9,7 @@ from encryptor import encrypt_data
 from rsu_event_listener import poll_rsu_broadcasts
 from sign_vehicle_data import sign_vehicle_data
 import threading
-
+import requests
 
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), "map.sumocfg")
 
@@ -20,6 +20,35 @@ vehicle_data_buffer = {}
 LAST_SEND_TIME = 0
 SEND_INTERVAL = 3  # Send data every 10 seconds
 
+CA_SERVER_URL = "http://localhost:5001/get-certificate"
+SIGNED_CERTIFICATE_FILE = "vehicle_keys/signed_vehicle_certificate.pem"
+PUBLIC_KEY_FILE = "vehicle_keys/vehicle_public_key.pem"
+
+def fetch_signed_certificate():
+    if os.path.exists(SIGNED_CERTIFICATE_FILE):
+        print("📄 Signed certificate already exists. Skipping fetch.")
+        return
+
+    if not os.path.exists(PUBLIC_KEY_FILE):
+        raise Exception("⚠️ Vehicle public key not found. Please generate keys first.")
+
+    with open(PUBLIC_KEY_FILE, "rb") as f:
+        public_key_pem = f.read()
+
+    # Base64 encode the public key to send as a safe JSON string
+    encoded_public_key = base64.b64encode(public_key_pem).decode("utf-8")
+
+    # Sending the base64 encoded public key in the POST request
+    response = requests.post(CA_SERVER_URL, json={"subject": "SUMO_Vehicle", "public_key": encoded_public_key})
+
+    if response.status_code == 200:
+        signed_certificate = response.content
+        with open(SIGNED_CERTIFICATE_FILE, "wb") as cert_file:
+            cert_file.write(signed_certificate)
+        print("✅ Successfully fetched and saved signed certificate from CA.")
+    else:
+        raise Exception(f"❌ Failed to fetch certificate: {response.status_code} - {response.text}")
+
 def send_vehicle_data():
     global LAST_SEND_TIME
     if vehicle_data_buffer:
@@ -28,7 +57,15 @@ def send_vehicle_data():
             encrypted_payload = encrypt_data(list(vehicle_data_buffer.values()))
             print("Encrypted Data: ")
             print(encrypted_payload)
-            response = requests.post(RSU_ENDPOINT, json={"encrypted_data": encrypted_payload})
+            with open(SIGNED_CERTIFICATE_FILE, "rb") as f:
+                cert_bytes = f.read()
+                cert_b64 = base64.b64encode(cert_bytes).decode('utf-8')
+
+            payload = {
+                "encrypted_data": encrypted_payload,
+                "certificate": cert_b64
+            }
+            response = requests.post(RSU_ENDPOINT, json=payload)
 
             if response.status_code == 200:
                 try:
@@ -48,6 +85,8 @@ def send_vehicle_data():
 def run_sumo():
     global LAST_SEND_TIME
     event_counter = 0  # For unique event IDs
+
+    fetch_signed_certificate()
 
     threading.Thread(target=poll_rsu_broadcasts, daemon=True).start()
     traci.start(["sumo-gui", "-c", CONFIG_PATH])
@@ -95,14 +134,17 @@ def run_sumo():
                 "eventId": event_id
             }
 
-            vehicle_data_buffer[vehicle_id]["signature"] = sign_vehicle_data(
-                event_id,
-                f"{timestamp}",
-                event_type,
-                vehicle_id,
-                f"{location['lat']},{location['lon']}",
-                message
-            )
+            if lat == -1 and lon == 0:
+                vehicle_data_buffer[vehicle_id]["signature"] = sign_vehicle_data(
+                    event_id,
+                    f"{timestamp}",
+                    event_type,
+                    vehicle_id,
+                    f"{location['lat']},{location['lon']}",
+                    message
+                )
+            else:
+                vehicle_data_buffer[vehicle_id]["signature"] = ""
 
             print(vehicle_data_buffer[vehicle_id])
 
