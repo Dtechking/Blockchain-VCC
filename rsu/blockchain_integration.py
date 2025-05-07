@@ -1,4 +1,5 @@
 from web3 import Web3
+from dotenv import load_dotenv
 import json
 import logging
 import base64
@@ -7,6 +8,7 @@ import os
 # Get the absolute path to the file
 file_path = os.path.join(os.path.dirname(__file__), 'contract_details', 'TrafficEventLogger.json')
 
+load_dotenv()
 
 # Connect to local Ganache
 web3 = Web3(Web3.HTTPProvider("http://127.0.0.1:7545"))
@@ -24,8 +26,8 @@ with open(file_path) as f:
 contract = web3.eth.contract(address=contract_address, abi=abi)
 
 # RSU's account details
-rsu_address = "0xB5E9B642EE03577FBE341306aFC583130304c35a"
-rsu_private_key = "0x791245bb39bed4771a0a53c1cd1bb5102b4969d9676e8e5d7e8d29eba65c1ac0"
+rsu_address = os.getenv("RSU_BLOCKCHAIN_ADDRESS")
+rsu_private_key = os.getenv("RSU_PRIVATE_KEY")
 
 # Function to send event to blockchain
 def send_event_to_blockchain(event_data):
@@ -53,21 +55,6 @@ def send_event_to_blockchain(event_data):
         assert isinstance(event_details, str)
         assert isinstance(signature, bytes)
 
-        # logging.info(f"Signature Length: {len(signature)}")
-        # assert len(signature) == 65
-
-        # Dry run simulation (optional, but useful)
-        # try:
-        #     contract.functions.logAlert(
-        #         event_id, event_type, event_hash, vehicle_id,
-        #         location, event_details, signature
-        #     ).call({'from': rsu_address})
-        #     print("✅ Dry run successful.")
-        # except Exception as dry_run_error:
-        #     logging.error(f"⚠️ Dry run failed: {dry_run_error}")
-        #     raise dry_run_error
-
-        # Build transaction
         txn = contract.functions.logAlert(
             event_id,
             timestamp,
@@ -80,7 +67,7 @@ def send_event_to_blockchain(event_data):
         ).build_transaction({
             'from': rsu_address,
             'nonce': web3.eth.get_transaction_count(rsu_address),
-            'gas': 500000,  # increased gas
+            'gas': 500000,
             'gasPrice': web3.to_wei('10', 'gwei')
         })
 
